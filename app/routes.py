@@ -44,3 +44,103 @@ def register_user():
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": f"Database provisioning failure: {str(e)}"}), 500
+
+
+from flask import render_template # Ensure render_template is included at the top imports!
+from app.models import Todo
+from sqlalchemy import select
+
+# --- USER INTERFACE GATEWAY ROUTE ---
+
+@auth_bp.route("/dashboard")
+def render_dashboard():
+    """Rerves the dark-theme central task management execution panel dashboard."""
+    return render_template("dashboard.html")
+
+
+# --- OPERATIONAL CRUD DATA ENDPOINTS ---
+
+@auth_bp.route("/api/todos", methods=["POST"])
+def create_task():
+    """
+    Captures manual or raw text task streams, maps them to a database user context,
+    and commits a structured item row inside the active PostgreSQL cluster.
+    """
+    data = request.get_json() or {}
+    title = data.get("title")
+    description = data.get("description")
+    priority = data.get("priority", "Medium")
+    category = data.get("category", "General")
+    user_id = data.get("user_id", 1) # Fallback to default verified mockup owner profile account
+
+    if not title:
+        return jsonify({"error": "Missing title token"}), 400
+
+    try:
+        # Construct and scale a pristine relational database record
+        new_todo = Todo(
+            title=title,
+            description=description,
+            priority=priority,
+            category=category,
+            user_id=user_id
+        )
+        db.session.add(new_todo)
+        db.session.commit()
+
+        return jsonify({
+            "message": "Task row deployed successfully into PostgreSQL cache rails",
+            "task": {
+                "id": new_todo.id,
+                "title": new_todo.title,
+                "priority": new_todo.priority,
+                "category": new_todo.category,
+                "is_completed": new_todo.is_completed
+            }
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Task deployment failure: {str(e)}"}), 500
+
+
+@auth_bp.route("/api/todos", methods=["GET"])
+def get_tasks():
+    """Fetches all active contextual task rows allocated to the user out of postgres memory."""
+    user_id = request.args.get("user_id", 1)
+    
+    try:
+        # Construct the query statement matching the user context
+        stmt = select(Todo).where(Todo.user_id == user_id).order_by(Todo.created_at.desc())
+        
+        # 🚀 Pull out the explicit SCALARS matrix array block before loop iteration
+        tasks = db.session.execute(stmt).scalars().all()
+        
+        # Build the structured JSON payload data list cleanly
+        task_list = [{
+            "id": t.id,
+            "title": t.title,
+            "description": t.description,
+            "priority": t.priority,
+            "category": t.category,
+            "is_completed": t.is_completed
+        } for t in tasks]
+        
+        return jsonify(task_list), 200
+        
+    except Exception as e:
+        return jsonify({"error": f"Task aggregation failure: {str(e)}"}), 500
+
+
+@auth_bp.route("/api/todos/<int:task_id>", methods=["PUT"])
+def update_task(task_id):
+    """Intercepts task updates and adjusts priorities, titles, or completion states inside postgres."""
+    data = request.get_json() or {}
+    todo = db.session.get(Todo, task_id)
+    if not todo:
+        return jsonify({"error": "Task record not found"}), 404
+        
+    todo.priority = data.get("priority", todo.priority)
+    todo.is_completed = data.get("is_completed", todo.is_completed)
+    db.session.commit()
+    return jsonify({"message": "Task matrix updated smoothly"}), 200

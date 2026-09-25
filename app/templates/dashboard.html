@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo-AI Console | Productive Intelligence</title>
+    <style>
+        :root {
+            --bg-dark: #0a0a0c;
+            --panel-dark: #121216;
+            --border-glow: #1f1f26;
+            --terminal-green: #00ff66;
+            --text-main: #e2e8f0;
+            --text-muted: #64748b;
+        }
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'SF Pro Display', -apple-system, sans-serif;
+            margin: 0;
+            padding: 2rem;
+        }
+        .console-container {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .panel {
+            background: var(--panel-dark);
+            border: 1px solid var(--border-glow);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+        h2 { margin-top: 0; font-size: 1.5rem; letter-spacing: -0.02em; }
+        .form-group { margin-bottom: 1.2rem; }
+        label { display: block; margin-bottom: 0.4rem; color: var(--text-muted); font-size: 0.85rem; }
+        input, textarea, select {
+            width: 100%; padding: 0.75rem; background: #1a1a22; border: 1px solid var(--border-glow);
+            border-radius: 6px; color: var(--text-main); box-sizing: border-box;
+        }
+        input:focus, textarea:focus { border-color: var(--terminal-green); outline: none; }
+        .btn {
+            background: var(--terminal-green); color: #000; border: none; padding: 0.75rem 1rem;
+            border-radius: 6px; font-weight: 600; cursor: pointer; width: 100%;
+        }
+        .todo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; align-content: start; }
+        .todo-card {
+            background: #16161c; border: 1px solid var(--border-glow); border-radius: 8px; padding: 1rem;
+            display: flex; flex-direction: column; justify-content: space-between;
+        }
+        .todo-meta { display: flex; gap: 0.5rem; margin-top: 1rem; }
+        .badge { font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px; font-family: monospace; background: #222; }
+        .badge-high { color: #ff3366; border: 1px solid #ff336644; }
+        .badge-med { color: #ffcc00; border: 1px solid #ffcc0044; }
+    </style>
+</head>
+<body>
+
+    <header style="max-width: 1400px; margin: 0 auto 2rem auto; display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-weight: 700; letter-spacing: -0.03em; font-size: 1.25rem;">todo<span style="color: var(--terminal-green);">ai</span>_console</div>
+        <div id="user-display" style="font-size: 0.9rem; color: var(--text-muted);">Secure Node Active</div>
+    </header>
+
+    <div class="console-container">
+        <!-- Left Panel: Task Engine Creation Gateway -->
+        <div class="panel">
+            <h2>Ingest New Task Scope</h2>
+            <form id="task-form">
+                <div class="form-group">
+                    <label for="task-title">Task Title / Messy Script</label>
+                    <input type="text" id="task-title" placeholder="Verify fallback routing constraints..." required>
+                </div>
+                <div class="form-group">
+                    <label for="task-desc">Contextual Parameters / Raw Notes</label>
+                    <textarea id="task-desc" rows="4" placeholder="Need to audit the u001 schema path on ordsoel88 tomorrow..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="task-priority">Manual Weighting (Pre-AI override)</label>
+                    <select id="task-priority">
+                        <option value="Low">Low Priority</option>
+                        <option value="Medium" selected>Medium Priority</option>
+                        <option value="High">High Priority</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn">Deploy Task Row</button>
+            </form>
+        </div>
+
+        <!-- Right Panel: Active Operational Workspace -->
+        <div class="panel">
+            <h2>Active Operational Workspace</h2>
+            <div id="todo-workspace" class="todo-grid">
+                <!-- Task matrices will populate dynamically via your routes stream -->
+                <div class="todo-card" style="opacity: 0.5; border-style: dashed;">
+                    <p style="color: var(--text-muted); text-align: center; margin: 2rem 0;">No active tasks mapped. Deploy a task row to populate workspace cache rails.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const taskForm = document.getElementById('task-form');
+        const todoWorkspace = document.getElementById('todo-workspace');
+
+        // 🚀 1. Fetch and render active task matrix rails from Postgres cache
+        async function fetchTasks() {
+            try {
+                const response = await fetch('/api/todos?user_id=1');
+                if (!response.ok) throw new Error('Task aggregation failed');
+                
+                const tasks = await response.json();
+                
+                // Clear the workspace skeleton panel
+                todoWorkspace.innerHTML = '';
+                
+                if (tasks.length === 0) {
+                    todoWorkspace.innerHTML = `
+                        <div class="todo-card" style="opacity: 0.5; border-style: dashed; grid-column: 1/-1;">
+                            <p style="color: var(--text-muted); text-align: center; margin: 2rem 0;">No active tasks mapped. Deploy a task row to populate workspace cache rails.</p>
+                        </div>`;
+                    return;
+                }
+
+                // Inject dynamic cards directly onto the UI grid loop
+                tasks.forEach(task => {
+                    const priorityClass = task.priority === 'High' ? 'badge-high' : 'badge-med';
+                    const card = document.createElement('div');
+                    card.className = 'todo-card';
+                    card.innerHTML = `
+                        <div style="font-weight: 600; margin-bottom: 0.5rem;">${task.title}</div>
+                        <div style="font-size: 0.9rem; color: var(--text-muted); flex-grow: 1;">${task.description || 'No contextual parameter metadata provided.'}</div>
+                        <div class="todo-meta">
+                            <span class="badge" style="color: var(--terminal-green); border: 1px solid #00ff6633;">${task.category}</span>
+                            <span class="badge ${priorityClass}">${task.priority}</span>
+                        </div>
+                    `;
+                    todoWorkspace.appendChild(card);
+                });
+            } catch (error) {
+                console.error('Core UI Stream Error:', error);
+            }
+        }
+
+        // 🚀 2. Intercept form submits and stream payload directly to the API
+        taskForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const title = document.getElementById('task-title').value;
+            const description = document.getElementById('task-desc').value;
+            const priority = document.getElementById('task-priority').value;
+
+            try {
+                const response = await fetch('/api/todos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: title,
+                        description: description,
+                        priority: priority,
+                        category: "DBA_Core", // Staging category tag parameter
+                        user_id: 1
+                    })
+                });
+
+                if (response.ok) {
+                    taskForm.reset();
+                    // Instant tactical screen re-sync without page reloads!
+                    await fetchTasks();
+                } else {
+                    const errData = await response.json();
+                    alert(`Deployment block failure: ${errData.error}`);
+                }
+            } catch (error) {
+                alert(`Network bridge execution failure: ${error.message}`);
+            }
+        });
+
+        // Trigger native cache load the millisecond the browser connects
+        document.addEventListener('DOMContentLoaded', fetchTasks);
+    </script>
+
+</body>
+</html>
